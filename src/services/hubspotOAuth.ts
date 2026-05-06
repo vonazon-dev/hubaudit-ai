@@ -18,7 +18,7 @@ function getCredentials() {
   if (!clientId || !clientSecret || !baseUrl) {
     throw new Error('Missing HUBSPOT_CLIENT_ID, HUBSPOT_CLIENT_SECRET, or APP_BASE_URL');
   }
-  return { clientId, clientSecret, redirectUri: `${baseUrl}/oauth/callback` };
+  return { clientId, clientSecret, redirectUri: `${baseUrl.replace(/\/$/, '')}/oauth/callback` };
 }
 
 export function buildAuthUrl(csrfToken: string): string {
