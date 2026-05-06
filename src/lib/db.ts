@@ -1,8 +1,22 @@
 import { Pool } from 'pg';
 import { logger } from './logger';
 
+// DO managed PG appends ?sslmode=require which newer pg treats as verify-full,
+// rejecting DO's self-signed CA. Strip it so our explicit ssl config wins.
+function sanitizeDbUrl(raw: string): string {
+  try {
+    const url = new URL(raw);
+    url.searchParams.delete('sslmode');
+    return url.toString();
+  } catch {
+    return raw;
+  }
+}
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL
+    ? sanitizeDbUrl(process.env.DATABASE_URL)
+    : undefined,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
