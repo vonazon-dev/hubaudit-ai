@@ -1,0 +1,86 @@
+# DigitalOcean App Platform spec
+# Deploy: doctl apps create --spec .do/app.yaml
+# Update:  doctl apps update <app-id> --spec .do/app.yaml
+
+name: hubaudit-ai
+region: nyc
+
+services:
+  - name: api
+    source_dir: /
+    github:
+      repo: your-github-username/hubaudit-ai     # ← update before deploying
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    instance_size_slug: apps-s-1vcpu-1gb
+    instance_count: 1
+    http_port: 3000
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 15
+      period_seconds: 30
+      timeout_seconds: 5
+      failure_threshold: 3
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_TIME
+      - key: PORT
+        value: "3000"
+        scope: RUN_TIME
+      - key: HUBSPOT_SCOPES
+        value: "crm.objects.contacts.read crm.objects.companies.read crm.objects.deals.read crm.objects.tickets.read crm.schemas.contacts.read crm.schemas.companies.read crm.schemas.deals.read crm.pipelines.orders.read automation.flows.read settings.users.read oauth"
+        scope: RUN_TIME
+      # DATABASE_URL is auto-injected by DO from the database component below
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${hubaudit-db.DATABASE_URL}
+      # Set these as secrets in the DO dashboard — never commit values
+      - key: APP_BASE_URL
+        scope: RUN_TIME
+        type: SECRET
+      - key: HUBSPOT_CLIENT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: HUBSPOT_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: TOKEN_ENCRYPTION_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AI_PROVIDER
+        scope: RUN_TIME
+        type: SECRET
+      - key: AZURE_OPENAI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AZURE_OPENAI_ENDPOINT
+        scope: RUN_TIME
+        type: SECRET
+      - key: AZURE_OPENAI_DEPLOYMENT
+        scope: RUN_TIME
+        type: SECRET
+      - key: AZURE_OPENAI_API_VERSION
+        scope: RUN_TIME
+        type: SECRET
+      - key: OPENAI_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: AI_MODEL_NAME
+        scope: RUN_TIME
+        type: SECRET
+      - key: AI_MAX_TOKENS
+        scope: RUN_TIME
+        type: SECRET
+      - key: AI_TEMPERATURE
+        scope: RUN_TIME
+        type: SECRET
+
+databases:
+  - name: hubaudit-db
+    engine: PG
+    version: "16"
+    size: db-s-1vcpu-1gb
+    num_nodes: 1
+    production: false                              # flip to true when going live
