@@ -28,5 +28,16 @@ export async function initDb(): Promise<void> {
       updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS audit_results (
+      portal_id   BIGINT       PRIMARY KEY,
+      status      TEXT         NOT NULL DEFAULT 'pending',
+      result      JSONB,
+      created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )
+  `);
+
   logger.info('Database ready');
 }

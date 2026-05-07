@@ -1,0 +1,7 @@
+{
+  "type": "pages",
+  "uid": "hubaudit-ai-pages",
+  "config": {
+    "file": "Pages.tsx"
+  }
+}

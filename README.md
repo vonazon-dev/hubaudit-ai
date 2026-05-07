@@ -97,23 +97,4 @@ src/
 - [ ] Build HubSpot API data fetcher modules (CRM cleanliness, process health, etc.)
 - [ ] Add background job queue for long-running audit
 
-
-
-
-  Step 3 — Dockerize the app
-
-  Create a Dockerfile that builds the TypeScript and runs node dist/index.js. DigitalOcean App Platform can also detect
-  Node apps without Docker, but a Dockerfile gives you more control and reproducibility.
-
-  Step 4 — Deploy to DigitalOcean App Platform
-
-  - Create a DO App from your GitHub repo
-  - Attach a Managed PostgreSQL database (DO handles backups, failover)
-  - Set all env vars (HUBSPOT_CLIENT_ID, HUBSPOT_CLIENT_SECRET, APP_BASE_URL, TOKEN_ENCRYPTION_KEY, DATABASE_URL, etc.)
-  in the DO dashboard
-  - The /api/health endpoint is already wired and works as a health check
-
-  Step 5 — Update HubSpot app settings
-
-  Once DO gives you a live URL (e.g. https://hubaudit-ai.ondigitalocean.app), update the redirect URI in your HubSpot
-  app's OAuth settings to point there. Right now it's likely pointing to localhost.
+## https://hubaudit-ai-i4z82.ondigitalocean.app/oauth/install

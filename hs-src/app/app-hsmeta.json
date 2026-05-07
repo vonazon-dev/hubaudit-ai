@@ -1,0 +1,31 @@
+{
+  "type": "app",
+  "uid": "hubaudit-ai-app",
+  "config": {
+    "name": "HubAudit AI",
+    "description": "AI-powered audit of your HubSpot portal health. Get a full analysis with scored categories and prioritised recommendations.",
+    "auth": {
+      "type": "oauth",
+      "clientId": "0eb7038f-45da-4d27-ba60-a6ad46e8e3ef",
+      "scopes": [
+        "content",
+        "forms",
+        "crm.lists.read",
+        "crm.objects.companies.read",
+        "crm.objects.contacts.read",
+        "crm.objects.deals.read",
+        "crm.pipelines.orders.read",
+        "crm.schemas.companies.read",
+        "crm.schemas.contacts.read",
+        "crm.schemas.deals.read",
+        "oauth",
+        "settings.users.read"
+      ]
+    },
+    "permittedUrls": {
+      "fetch": ["https://hubaudit-ai-i4z82.ondigitalocean.app"],
+      "iframe": [],
+      "img": []
+    }
+  }
+}

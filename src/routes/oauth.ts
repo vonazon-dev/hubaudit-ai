@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { buildAuthUrl, exchangeCode } from '../services/hubspotOAuth';
 import { tokenStore } from '../lib/tokenStore';
-import { runAudit } from '../audit/orchestrator';
+import { fireAudit } from '../services/auditRunner';
 import { logger } from '../lib/logger';
 
 const router = Router();
@@ -61,40 +61,8 @@ router.get('/callback', async (req: Request, res: Response) => {
     const tokens = await exchangeCode(code);
     logger.info('Installation complete', { portalId: tokens.portalId });
 
-    // Fire one-time audit in background — don't block the install response
-    runAudit(tokens.portalId)
-      .then((result) => {
-        if (process.env.NODE_ENV !== 'production') {
-          const { scores, analysis, durationMs } = result;
-          console.log('\n========== AUDIT RESULT ==========');
-          console.log(`Portal:       ${tokens.portalId}`);
-          console.log(`Duration:     ${durationMs}ms`);
-          console.log(`\nSCORES`);
-          console.log(`  Overall:          ${scores.overall}`);
-          console.log(`  CRM Cleanliness:  ${scores.crmCleanliness}`);
-          console.log(`  Process Health:   ${scores.processHealth}`);
-          console.log(`  Feature Adoption: ${scores.featureAdoption}`);
-          console.log(`  User Activity:    ${scores.userActivity}`);
-          console.log(`\nEXECUTIVE SUMMARY`);
-          console.log(`  ${analysis.executiveSummary.overallVerdict}`);
-          console.log(`\n  Wins:`);
-          analysis.executiveSummary.topWins.forEach((w) => console.log(`    + ${w}`));
-          console.log(`\n  Gaps:`);
-          analysis.executiveSummary.topGaps.forEach((g) => console.log(`    - ${g}`));
-          console.log(`\n  ${analysis.executiveSummary.closingNote}`);
-          console.log(`\nRECOMMENDATIONS (${analysis.recommendations.length} total)`);
-          analysis.recommendations.forEach((r, i) => {
-            console.log(`\n  [${i + 1}] [${r.risk.toUpperCase()}] ${r.title}`);
-            console.log(`      Problem: ${r.problem}`);
-            console.log(`      Impact:  ${r.impact}`);
-            console.log(`      Action:  ${r.action}`);
-          });
-          console.log('\n==================================\n');
-        }
-      })
-      .catch((err: Error) => {
-        logger.error('Post-install audit failed', { portalId: tokens.portalId, error: err.message });
-      });
+    // Fire one-time audit in background — persists result to DB via auditRunner
+    fireAudit(tokens.portalId);
 
     return res.send(`
       <h2>HubAudit AI installed successfully!</h2>
