@@ -2,6 +2,6 @@
   "type": "pages",
   "uid": "hubaudit-ai-pages",
   "config": {
-    "file": "Pages.tsx"
+    "entrypoint": "/app/pages/Pages.tsx"
   }
 }

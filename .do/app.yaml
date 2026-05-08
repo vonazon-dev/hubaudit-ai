@@ -30,7 +30,7 @@ services:
         value: "3000"
         scope: RUN_TIME
       - key: HUBSPOT_SCOPES
-        value: "crm.objects.contacts.read crm.objects.companies.read crm.objects.deals.read crm.objects.tickets.read crm.schemas.contacts.read crm.schemas.companies.read crm.schemas.deals.read crm.pipelines.orders.read automation.flows.read settings.users.read oauth"
+        value: "crm.objects.contacts.read crm.objects.companies.read crm.objects.deals.read tickets crm.schemas.contacts.read crm.schemas.companies.read crm.schemas.deals.read automation settings.users.read oauth"
         scope: RUN_TIME
       # DATABASE_URL is auto-injected by DO from the database component below
       - key: DATABASE_URL

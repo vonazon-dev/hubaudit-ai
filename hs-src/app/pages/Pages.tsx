@@ -30,7 +30,6 @@ interface Recommendation {
   problem: string;
   impact: string;
   action: string;
-  hubspotUrl?: string;
 }
 
 interface AuditResult {
@@ -63,14 +62,13 @@ function AuditPage({ portalId }: { portalId: number }) {
         `${BACKEND}/api/report?portalId=${portalId}`,
       );
 
-      if (resp.status === 404) { setStatus('not_found'); return; }
-      if (resp.status === 401) { setStatus('not_found'); return; }
-      if (!resp.ok)            { setStatus('error');     return; }
+      if (resp.status === 404 || resp.status === 401) { setStatus('not_found'); return; }
+      if (resp.status < 200 || resp.status >= 300)    { setStatus('error');     return; }
 
       const data = await resp.json();
 
-      if (data.status === 'pending')  { setStatus('pending');  return; }
-      if (data.status === 'failed')   { setStatus('failed');   return; }
+      if (data.status === 'pending')  { setStatus('pending'); return; }
+      if (data.status === 'failed')   { setStatus('failed');  return; }
       if (data.status === 'complete') {
         setResult(data.result);
         setStatus('complete');
@@ -92,10 +90,8 @@ function AuditPage({ portalId }: { portalId: number }) {
     }
   }, [portalId]);
 
-  // Initial load
   useEffect(() => { fetchReport(); }, [fetchReport]);
 
-  // Auto-poll every 20s while pending
   useEffect(() => {
     if (status !== 'pending') return;
     const timer = setInterval(fetchReport, 20000);
@@ -117,9 +113,7 @@ function AuditPage({ portalId }: { portalId: number }) {
           Your HubSpot account audit is running in the background. This typically
           takes 2–5 minutes. This page checks automatically every 20 seconds.
         </Alert>
-        <Button onClick={fetchReport} variant="secondary">
-          Check Now
-        </Button>
+        <Button onClick={fetchReport} variant="secondary">Check Now</Button>
       </Flex>
     );
   }
@@ -169,10 +163,9 @@ function riskVariant(risk: string): 'danger' | 'warning' | 'default' | 'success'
 
 function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => void }) {
   const { scores, analysis } = result;
-  const byRisk = (['critical', 'high', 'medium', 'low'] as const).map((risk) => ({
-    risk,
-    items: analysis.recommendations.filter((r) => r.risk === risk),
-  })).filter((g) => g.items.length > 0);
+  const byRisk = (['critical', 'high', 'medium', 'low'] as const)
+    .map((risk) => ({ risk, items: analysis.recommendations.filter((r) => r.risk === risk) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <Flex direction="column" gap="large">
@@ -180,9 +173,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       {/* Header */}
       <Flex direction="row" justify="between" align="center">
         <Heading>HubAudit AI Report</Heading>
-        <Button onClick={onRerun} variant="secondary" size="small">
-          Re-run Audit
-        </Button>
+        <Button onClick={onRerun} variant="secondary">Re-run Audit</Button>
       </Flex>
 
       {/* Overall score */}
@@ -197,9 +188,9 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
           <Text format={{ fontWeight: 'bold' }}>Category Breakdown</Text>
           {[
             { label: 'CRM Cleanliness',  score: scores.crmCleanliness },
-            { label: 'Process Health',    score: scores.processHealth },
-            { label: 'Feature Adoption',  score: scores.featureAdoption },
-            { label: 'User Activity',     score: scores.userActivity },
+            { label: 'Process Health',   score: scores.processHealth },
+            { label: 'Feature Adoption', score: scores.featureAdoption },
+            { label: 'User Activity',    score: scores.userActivity },
           ].map(({ label, score }) => (
             <Flex key={label} direction="row" justify="between" align="center">
               <Text>{label}</Text>
@@ -237,9 +228,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       {/* Recommendations */}
       <Flex direction="column" gap="medium">
-        <Heading>
-          Recommendations ({analysis.recommendations.length})
-        </Heading>
+        <Heading>Recommendations ({analysis.recommendations.length})</Heading>
 
         {byRisk.map(({ risk, items }) => (
           <Flex key={risk} direction="column" gap="small">
@@ -251,18 +240,12 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
               <Box key={rec.id}>
                 <Flex direction="column" gap="extra-small">
                   <Text format={{ fontWeight: 'bold' }}>{rec.title}</Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Problem: </Text>
-                    {rec.problem}
-                  </Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Impact: </Text>
-                    {rec.impact}
-                  </Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Action: </Text>
-                    {rec.action}
-                  </Text>
+                  <Text format={{ fontWeight: 'bold' }}>Problem</Text>
+                  <Text>{rec.problem}</Text>
+                  <Text format={{ fontWeight: 'bold' }}>Impact</Text>
+                  <Text>{rec.impact}</Text>
+                  <Text format={{ fontWeight: 'bold' }}>Action</Text>
+                  <Text>{rec.action}</Text>
                 </Flex>
               </Box>
             ))}
@@ -272,10 +255,8 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       <Divider />
 
-      <Text variant="microcopy">
-        Generated {new Date(analysis.generatedAt).toLocaleString()} ·{' '}
-        Model: {analysis.modelUsed} ·{' '}
-        Duration: {Math.round(result.durationMs / 1000)}s
+      <Text>
+        Generated {new Date(analysis.generatedAt).toLocaleString()} · Model: {analysis.modelUsed} · Duration: {Math.round(result.durationMs / 1000)}s
       </Text>
 
     </Flex>
