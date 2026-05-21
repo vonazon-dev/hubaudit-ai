@@ -13,15 +13,13 @@ const BASE_URL = 'https://api.hubapi.com';
 const MAX_RETRIES = 4;
 const INITIAL_BACKOFF_MS = 1000;
 
-// Allows up to MAX_PER_WINDOW requests per WINDOW_MS, queuing the rest.
+// Releases one request every INTERVAL_MS — guarantees even spacing at 4 req/s.
+// HubSpot search API limit is 4 req/s; general API is 10 req/s.
+// Using 250ms interval (4/s) covers both safely.
 class RateLimiter {
   private queue: Array<() => void> = [];
   private processing = false;
-  private count = 0;
-  private windowStart = Date.now();
-
-  private readonly MAX_PER_WINDOW = 8;
-  private readonly WINDOW_MS = 1000;
+  private readonly INTERVAL_MS = 250;
 
   throttle(): Promise<void> {
     return new Promise((resolve) => {
@@ -34,21 +32,10 @@ class RateLimiter {
     this.processing = true;
 
     while (this.queue.length > 0) {
-      const now = Date.now();
-      const elapsed = now - this.windowStart;
-
-      if (elapsed >= this.WINDOW_MS) {
-        this.windowStart = now;
-        this.count = 0;
-      }
-
-      if (this.count >= this.MAX_PER_WINDOW) {
-        await new Promise((r) => setTimeout(r, this.WINDOW_MS - elapsed + 10));
-        continue;
-      }
-
-      this.count++;
       this.queue.shift()!();
+      if (this.queue.length > 0) {
+        await new Promise((r) => setTimeout(r, this.INTERVAL_MS));
+      }
     }
 
     this.processing = false;
