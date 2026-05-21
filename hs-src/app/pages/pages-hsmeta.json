@@ -1,5 +1,5 @@
 {
-  "type": "pages",
+  "type": "page",
   "uid": "hubaudit-ai-pages",
   "config": {
     "entrypoint": "/app/pages/Pages.tsx"

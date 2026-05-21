@@ -48,7 +48,7 @@ interface AuditResult {
   durationMs: number;
 }
 
-hubspot.extend(({ context }: any) => (
+hubspot.extend<'pages'>(({ context }: any) => (
   <AuditPage portalId={context.portal.id} />
 ));
 

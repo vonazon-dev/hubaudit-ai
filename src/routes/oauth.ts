@@ -88,8 +88,8 @@ router.get('/callback', async (req: Request, res: Response) => {
     <div class="badge">Audit Running</div>
     <h1>HubAudit AI Installed</h1>
     <p>Your portal audit is running in the background — this typically takes 2–5 minutes. Once complete, your full report will be waiting inside HubSpot.</p>
-    <a class="btn" href="https://app.hubspot.com/">Open HubSpot</a>
-    <p class="note">Find <strong>HubAudit AI</strong> in the left sidebar navigation to view your report.</p>
+    <a class="btn" href="https://app.hubspot.com/app/${tokens.portalId}/38957320">View My Report</a>
+    <p class="note">You can also find <strong>HubAudit AI</strong> in the left sidebar navigation.</p>
   </div>
 </body>
 </html>`);
