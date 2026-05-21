@@ -79,44 +79,51 @@ function scoreProcessHealth(data: AuditPayload['processHealth']): number {
 function scoreFeatureAdoption(data: AuditPayload['featureAdoption']): number {
   const checks: number[] = [];
 
-  // Sequences being used
   if (data.sequences.total > 0) {
     checks.push((data.sequences.active / data.sequences.total) * 100);
   }
 
-  // Lists have active records
   if (data.lists.total > 0) {
     checks.push((data.lists.active / data.lists.total) * 100);
   }
 
-  // Forms in use
   if (data.forms.total > 0) {
     checks.push((data.forms.active / data.forms.total) * 100);
   }
 
-  // Reports created
-  checks.push(Math.min(data.reports.total * 5, 100));
-
-  // Integrations connected
-  checks.push(Math.min(data.integrations.length * 20, 100));
-
-  // Email deliverability
-  if (data.emailDeliverability.bounceRate !== null) {
-    const bounceScore = Math.max(0, 100 - data.emailDeliverability.bounceRate * 10);
-    checks.push(bounceScore);
+  // Only score reports/integrations when data was actually retrieved
+  if (data.reports.total > 0) {
+    checks.push(Math.min(data.reports.total * 5, 100));
   }
 
-  if (checks.length === 0) return 40;
+  if (data.integrations.length > 0) {
+    checks.push(Math.min(data.integrations.length * 20, 100));
+  }
+
+  if (data.emailDeliverability.bounceRate !== null) {
+    checks.push(Math.max(0, 100 - data.emailDeliverability.bounceRate * 10));
+  }
+
+  // No data available (scope limitations) — return neutral score
+  if (checks.length === 0) return 50;
   return clamp(checks.reduce((a, b) => a + b, 0) / checks.length);
 }
 
 function scoreUserActivity(data: AuditPayload['userActivity']): number {
   if (data.total === 0) return 50;
 
+  const superAdminPenalty = Math.max(0, data.superAdmins - 2) * 5;
+  const noRolePenalty = (data.usersWithNoRole / data.total) * 20;
+
+  // lastLogin is not returned by the users API with current scopes —
+  // skip activity-rate scoring when all users lack login timestamps
+  const hasLoginData = data.active > 0 || data.inactive > 0;
+  if (!hasLoginData) {
+    return clamp(70 - superAdminPenalty - noRolePenalty);
+  }
+
   const activeRate = (data.active / data.total) * 100;
   const neverLoggedInPenalty = (data.neverLoggedIn / data.total) * 30;
-  const superAdminPenalty = Math.max(0, data.superAdmins - 2) * 5; // >2 super admins is a risk
-  const noRolePenalty = (data.usersWithNoRole / data.total) * 20;
 
   return clamp(activeRate - neverLoggedInPenalty - superAdminPenalty - noRolePenalty);
 }
