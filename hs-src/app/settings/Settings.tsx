@@ -154,7 +154,7 @@ function AuditPage({ portalId }: { portalId: number }) {
 
   if (status === 'loading') {
     return (
-      <Flex direction="column" align="center" gap="medium">
+      <Flex direction="column" align="center" gap="large">
         <Text>Loading your audit report...</Text>
       </Flex>
     );
@@ -164,8 +164,7 @@ function AuditPage({ portalId }: { portalId: number }) {
     return (
       <Flex direction="column" gap="medium">
         <Alert title="Audit In Progress" variant="info">
-          Your HubSpot account audit is running. This typically takes 2–5 minutes.
-          This page checks automatically every 20 seconds.
+          Your HubSpot account audit is running. This typically takes 2–5 minutes. This page checks automatically every 20 seconds.
         </Alert>
         <Button onClick={fetchReport} variant="secondary">Check Now</Button>
       </Flex>
@@ -176,8 +175,7 @@ function AuditPage({ portalId }: { portalId: number }) {
     return (
       <Flex direction="column" gap="medium">
         <Alert title="No Audit Found" variant="warning">
-          No audit report was found for your portal. This can happen if the server
-          restarted shortly after you installed the app.
+          No audit report was found for your portal. This can happen if the server restarted shortly after you installed the app.
         </Alert>
         <Button onClick={triggerAudit}>Run Audit Now</Button>
       </Flex>
@@ -226,6 +224,13 @@ function riskVariant(risk: string): 'danger' | 'warning' | 'default' | 'success'
   return 'success';
 }
 
+function riskEmoji(risk: string): string {
+  if (risk === 'critical') return '🔴';
+  if (risk === 'high')     return '🟠';
+  if (risk === 'medium')   return '🟡';
+  return '🟢';
+}
+
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('en-US', {
@@ -234,6 +239,11 @@ function formatDate(iso: string): string {
   } catch {
     return iso;
   }
+}
+
+function pct(part: number, total: number): string {
+  if (total === 0) return '0%';
+  return `${Math.round((part / total) * 100)}%`;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────
@@ -247,35 +257,73 @@ function SectionTitle({ children }: { children: string }) {
   );
 }
 
-function MetricBox({
-  label,
-  value,
-  sub,
-}: {
+function StatCard({ label, value, sub, variant }: {
   label: string;
   value: string | number;
   sub?: string;
+  variant?: 'danger' | 'warning' | 'default' | 'success';
 }) {
   return (
     <Box>
       <Flex direction="column" align="center" gap="extra-small">
-        <Text format={{ fontWeight: 'bold' }}>{value}</Text>
-        <Text>{label}</Text>
+        {variant ? (
+          <Tag variant={variant}>{value}</Tag>
+        ) : (
+          <Text format={{ fontWeight: 'bold' }}>{value}</Text>
+        )}
+        <Text format={{ fontWeight: 'bold' }}>{label}</Text>
         {sub ? <Text>{sub}</Text> : null}
       </Flex>
     </Box>
   );
 }
 
-function ScoreRow({ label, score }: { label: string; score: number }) {
+function ScoreBar({ label, score }: { label: string; score: number }) {
+  const filled = Math.round(score / 10);
+  const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
   return (
-    <Flex direction="row" justify="between" align="center">
+    <Flex direction="row" justify="between" align="center" gap="medium">
       <Text>{label}</Text>
       <Flex direction="row" align="center" gap="small">
-        <Tag variant={scoreVariant(score)}>{score} / 100</Tag>
-        <Tag variant={scoreVariant(score)}>{gradeLabel(score)}</Tag>
+        <Text>{bar}</Text>
+        <Tag variant={scoreVariant(score)}>{score}/100 · {gradeLabel(score)}</Tag>
       </Flex>
     </Flex>
+  );
+}
+
+function RecCard({ rec }: { rec: Recommendation }) {
+  return (
+    <Box>
+      <Flex direction="column" gap="small">
+        <Flex direction="row" align="center" gap="small">
+          <Tag variant={riskVariant(rec.risk)}>
+            {riskEmoji(rec.risk)} {rec.risk.charAt(0).toUpperCase() + rec.risk.slice(1)}
+          </Tag>
+          <Tag variant="default">{rec.category}</Tag>
+          <Text format={{ fontWeight: 'bold' }}>{rec.title}</Text>
+        </Flex>
+
+        <Flex direction="row" gap="small">
+          <Text format={{ fontWeight: 'bold' }}>Problem:</Text>
+          <Text>{rec.problem}</Text>
+        </Flex>
+
+        <Flex direction="row" gap="small">
+          <Text format={{ fontWeight: 'bold' }}>Impact:</Text>
+          <Text>{rec.impact}</Text>
+        </Flex>
+
+        <Flex direction="row" gap="small">
+          <Text format={{ fontWeight: 'bold' }}>Action:</Text>
+          <Text>{rec.action}</Text>
+        </Flex>
+
+        {rec.hubspotUrl ? (
+          <Link href={rec.hubspotUrl}>Open in HubSpot →</Link>
+        ) : null}
+      </Flex>
+    </Box>
   );
 }
 
@@ -285,16 +333,21 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
   const { scores, analysis, payload } = result;
   const p = payload ?? null;
 
-  const byRisk = (['critical', 'high', 'medium', 'low'] as const)
-    .map((risk) => ({
-      risk,
-      items: analysis.recommendations.filter((r) => r.risk === risk),
-    }))
-    .filter((g) => g.items.length > 0);
+  const groups: { risk: RiskLevel; items: Recommendation[] }[] = [
+    { risk: 'critical', items: analysis.recommendations.filter((r) => r.risk === 'critical') },
+    { risk: 'high',     items: analysis.recommendations.filter((r) => r.risk === 'high') },
+    { risk: 'medium',   items: analysis.recommendations.filter((r) => r.risk === 'medium') },
+    { risk: 'low',      items: analysis.recommendations.filter((r) => r.risk === 'low') },
+  ].filter((g) => g.items.length > 0);
 
   const generatedDate = formatDate(analysis.generatedAt);
   const totalWorkflows = p?.processHealth?.workflows?.length ?? 0;
   const activeWorkflows = p?.processHealth?.workflows?.filter((w) => w.enabled).length ?? 0;
+
+  const critCount = analysis.recommendations.filter((r) => r.risk === 'critical').length;
+  const highCount = analysis.recommendations.filter((r) => r.risk === 'high').length;
+  const medCount  = analysis.recommendations.filter((r) => r.risk === 'medium').length;
+  const lowCount  = analysis.recommendations.filter((r) => r.risk === 'low').length;
 
   return (
     <Flex direction="column" gap="large">
@@ -303,7 +356,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       <Flex direction="row" justify="between" align="start">
         <Flex direction="column" gap="extra-small">
           <Heading>HubAudit AI</Heading>
-          <Text>Quarterly Portal Health Report</Text>
+          <Text format={{ fontWeight: 'bold' }}>Quarterly Portal Health Report</Text>
           <Text>Generated {generatedDate}</Text>
         </Flex>
         <Button onClick={onRerun} variant="secondary">Re-run Audit</Button>
@@ -311,8 +364,10 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       <Divider />
 
-      {/* ── 2. Overall Score ─────────────────────────────────────── */}
+      {/* ── 2. Overall Score Dashboard ───────────────────────────── */}
       <Flex direction="column" gap="medium">
+        <SectionTitle>Overall Health Score</SectionTitle>
+
         <Flex direction="row" align="center" gap="medium">
           <Heading>{scores.overall} / 100</Heading>
           <Tag variant={scoreVariant(scores.overall)}>
@@ -320,29 +375,19 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
           </Tag>
         </Flex>
 
-        <Flex direction="row" gap="large">
-          {[
-            { label: 'CRM Cleanliness',  score: scores.crmCleanliness },
-            { label: 'Process Health',   score: scores.processHealth },
-            { label: 'Feature Adoption', score: scores.featureAdoption },
-            { label: 'User Activity',    score: scores.userActivity },
-          ].map(({ label, score }) => (
-            <Flex key={label} direction="column" align="center" gap="extra-small">
-              <Tag variant={scoreVariant(score)}>{score}</Tag>
-              <Text>{label}</Text>
-            </Flex>
-          ))}
+        <Flex direction="column" gap="small">
+          <ScoreBar label="CRM Cleanliness"  score={scores.crmCleanliness} />
+          <ScoreBar label="Process Health"   score={scores.processHealth} />
+          <ScoreBar label="Feature Adoption" score={scores.featureAdoption} />
+          <ScoreBar label="User Activity"    score={scores.userActivity} />
         </Flex>
 
-        <Flex direction="row" gap="small">
-          {(['critical', 'high', 'medium', 'low'] as const).map((risk) => {
-            const count = analysis.recommendations.filter((r) => r.risk === risk).length;
-            return count > 0 ? (
-              <Tag key={risk} variant={riskVariant(risk)}>
-                {risk.charAt(0).toUpperCase() + risk.slice(1)}: {count}
-              </Tag>
-            ) : null;
-          })}
+        {/* Issue count badges */}
+        <Flex direction="row" gap="small" wrap="wrap">
+          {critCount > 0 ? <Tag variant="danger">{critCount} Critical</Tag> : null}
+          {highCount > 0 ? <Tag variant="warning">{highCount} High</Tag> : null}
+          {medCount  > 0 ? <Tag variant="default">{medCount} Medium</Tag> : null}
+          {lowCount  > 0 ? <Tag variant="success">{lowCount} Low</Tag> : null}
         </Flex>
       </Flex>
 
@@ -352,19 +397,17 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       <Flex direction="column" gap="medium">
         <SectionTitle>Executive Summary</SectionTitle>
 
-        <Text format={{ italic: true }}>
-          "{analysis.executiveSummary.overallVerdict}"
-        </Text>
+        <Text format={{ italic: true }}>"{analysis.executiveSummary.overallVerdict}"</Text>
 
         <Flex direction="row" gap="large">
           <Flex direction="column" gap="extra-small">
-            <Text format={{ fontWeight: 'bold' }}>What's working well</Text>
+            <Text format={{ fontWeight: 'bold' }}>What's Working Well</Text>
             {analysis.executiveSummary.topWins.map((win, i) => (
               <Text key={i}>✓  {win}</Text>
             ))}
           </Flex>
           <Flex direction="column" gap="extra-small">
-            <Text format={{ fontWeight: 'bold' }}>Top gaps to address</Text>
+            <Text format={{ fontWeight: 'bold' }}>Top Gaps to Address</Text>
             {analysis.executiveSummary.topGaps.map((gap, i) => (
               <Text key={i}>✗  {gap}</Text>
             ))}
@@ -380,46 +423,31 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       <Divider />
 
-      {/* ── 4. Health Score Breakdown ─────────────────────────────── */}
-      <Flex direction="column" gap="medium">
-        <SectionTitle>Health Score Breakdown</SectionTitle>
-        <Flex direction="column" gap="small">
-          <ScoreRow label="CRM Cleanliness"  score={scores.crmCleanliness} />
-          <ScoreRow label="Process Health"   score={scores.processHealth} />
-          <ScoreRow label="Feature Adoption" score={scores.featureAdoption} />
-          <ScoreRow label="User Activity"    score={scores.userActivity} />
-        </Flex>
-      </Flex>
-
-      <Divider />
-
-      {/* ── 5. Portal at a Glance ────────────────────────────────── */}
+      {/* ── 4. Portal at a Glance ────────────────────────────────── */}
       {p ? (
         <Flex direction="column" gap="medium">
           <SectionTitle>Portal at a Glance</SectionTitle>
 
           <Flex direction="row" gap="medium">
-            <MetricBox label="Contacts"  value={p.crmCleanliness.contacts.total} />
-            <MetricBox label="Companies" value={p.crmCleanliness.companies.total} />
-            <MetricBox label="Deals"     value={p.crmCleanliness.deals.total} />
-            <MetricBox label="Tickets"   value={p.crmCleanliness.tickets.total} />
+            <StatCard label="Contacts"  value={p.crmCleanliness.contacts.total} />
+            <StatCard label="Companies" value={p.crmCleanliness.companies.total} />
+            <StatCard label="Deals"     value={p.crmCleanliness.deals.total} />
+            <StatCard label="Tickets"   value={p.crmCleanliness.tickets.total} />
           </Flex>
 
           <Flex direction="row" gap="medium">
-            <MetricBox
+            <StatCard
               label="Total Users"
               value={p.userActivity.total}
-              sub={p.userActivity.neverLoggedIn > 0
-                ? `${p.userActivity.neverLoggedIn} never logged in`
-                : undefined}
+              sub={p.userActivity.neverLoggedIn > 0 ? `${p.userActivity.neverLoggedIn} never logged in` : undefined}
             />
-            <MetricBox label="Pipelines" value={p.processHealth.pipelines.length} />
-            <MetricBox
+            <StatCard label="Pipelines" value={p.processHealth.pipelines.length} />
+            <StatCard
               label="Workflows"
               value={totalWorkflows}
               sub={`${activeWorkflows} active`}
             />
-            <MetricBox
+            <StatCard
               label="Forms"
               value={p.featureAdoption.forms.total}
               sub={`${p.featureAdoption.forms.active} active`}
@@ -430,40 +458,22 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       <Divider />
 
-      {/* ── 6. Action Plan ───────────────────────────────────────── */}
+      {/* ── 5. Action Plan ───────────────────────────────────────── */}
       <Flex direction="column" gap="medium">
-        <SectionTitle>
-          {`Action Plan — ${analysis.recommendations.length} Recommendations`}
-        </SectionTitle>
+        <SectionTitle>{`Action Plan — ${analysis.recommendations.length} Recommendations`}</SectionTitle>
         <Text>Sorted by priority. Address critical and high items first for maximum ROI.</Text>
 
-        {byRisk.map(({ risk, items }) => (
+        {groups.map(({ risk, items }) => (
           <Flex key={risk} direction="column" gap="small">
-            <Tag variant={riskVariant(risk)}>
-              {risk.charAt(0).toUpperCase() + risk.slice(1)} ({items.length})
-            </Tag>
+            <Flex direction="row" align="center" gap="small">
+              <Tag variant={riskVariant(risk)}>
+                {riskEmoji(risk)} {risk.charAt(0).toUpperCase() + risk.slice(1)}
+              </Tag>
+              <Text format={{ fontWeight: 'bold' }}>{items.length} item{items.length !== 1 ? 's' : ''}</Text>
+            </Flex>
 
             {items.map((rec) => (
-              <Box key={rec.id}>
-                <Flex direction="column" gap="extra-small">
-                  <Text format={{ fontWeight: 'bold' }}>{rec.title}</Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Problem: </Text>
-                    {rec.problem}
-                  </Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Impact: </Text>
-                    {rec.impact}
-                  </Text>
-                  <Text>
-                    <Text format={{ fontWeight: 'bold' }}>Action: </Text>
-                    {rec.action}
-                  </Text>
-                  {rec.hubspotUrl ? (
-                    <Link href={rec.hubspotUrl}>→ Open in HubSpot</Link>
-                  ) : null}
-                </Flex>
-              </Box>
+              <RecCard key={rec.id} rec={rec} />
             ))}
           </Flex>
         ))}
@@ -471,39 +481,56 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
       <Divider />
 
-      {/* ── 7. Detailed Metrics ──────────────────────────────────── */}
+      {/* ── 6. Detailed Metrics ──────────────────────────────────── */}
       {p ? (
         <Flex direction="column" gap="large">
           <SectionTitle>Detailed Metrics</SectionTitle>
 
           {/* CRM Cleanliness per-object */}
           <Flex direction="column" gap="small">
-            <Text format={{ fontWeight: 'bold' }}>CRM Cleanliness</Text>
-            <Flex direction="row" gap="medium">
-              {([
-                { label: 'Contacts',  data: p.crmCleanliness.contacts },
-                { label: 'Companies', data: p.crmCleanliness.companies },
-                { label: 'Deals',     data: p.crmCleanliness.deals },
-                { label: 'Tickets',   data: p.crmCleanliness.tickets },
-              ] as const).map(({ label, data }) => (
-                <Box key={label}>
-                  <Flex direction="column" gap="extra-small">
-                    <Text format={{ fontWeight: 'bold' }}>{label}</Text>
-                    <Text>Total: {data.total}</Text>
-                    <Text>Unassigned: {data.unassigned}</Text>
-                    <Text>Stagnant: {data.stagnant}</Text>
-                    <Tag variant={scoreVariant(data.completenessScore)}>
-                      {data.completenessScore}% complete
-                    </Tag>
-                  </Flex>
-                </Box>
-              ))}
-            </Flex>
+            <Text format={{ fontWeight: 'bold' }}>CRM Object Health</Text>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeader>Object</TableHeader>
+                  <TableHeader>Total</TableHeader>
+                  <TableHeader>Unassigned</TableHeader>
+                  <TableHeader>Stagnant</TableHeader>
+                  <TableHeader>Completeness</TableHeader>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[
+                  { label: 'Contacts',  data: p.crmCleanliness.contacts },
+                  { label: 'Companies', data: p.crmCleanliness.companies },
+                  { label: 'Deals',     data: p.crmCleanliness.deals },
+                  { label: 'Tickets',   data: p.crmCleanliness.tickets },
+                ].map(({ label, data }) => (
+                  <TableRow key={label}>
+                    <TableCell>{label}</TableCell>
+                    <TableCell>{data.total}</TableCell>
+                    <TableCell>
+                      {data.unassigned > 0
+                        ? <Tag variant="warning">{data.unassigned}</Tag>
+                        : <Tag variant="success">0</Tag>}
+                    </TableCell>
+                    <TableCell>
+                      {data.stagnant > 0
+                        ? <Tag variant="warning">{data.stagnant}</Tag>
+                        : <Tag variant="success">0</Tag>}
+                    </TableCell>
+                    <TableCell>
+                      <Tag variant={scoreVariant(data.completenessScore)}>
+                        {data.completenessScore}%
+                      </Tag>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Flex>
 
-          <Divider />
-
-          {/* Deal Pipelines table */}
+          {/* Deal Pipelines */}
           {p.processHealth.pipelines.length > 0 ? (
             <Flex direction="column" gap="small">
               <Text format={{ fontWeight: 'bold' }}>Deal Pipelines</Text>
@@ -536,48 +563,67 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
             </Flex>
           ) : null}
 
-          <Divider />
-
           {/* User Activity */}
           <Flex direction="column" gap="small">
             <Text format={{ fontWeight: 'bold' }}>User Activity</Text>
             <Flex direction="row" gap="medium">
-              <MetricBox label="Total Users"     value={p.userActivity.total} />
-              <MetricBox label="Active (30d)"    value={p.userActivity.active} />
-              <MetricBox label="Inactive (90d+)" value={p.userActivity.inactive} />
-              <MetricBox label="Never Logged In" value={p.userActivity.neverLoggedIn} />
+              <StatCard label="Total" value={p.userActivity.total} />
+              <StatCard
+                label="Active (30d)"
+                value={p.userActivity.active}
+                sub={pct(p.userActivity.active, p.userActivity.total)}
+                variant={p.userActivity.active / Math.max(p.userActivity.total, 1) >= 0.7 ? 'success' : 'warning'}
+              />
+              <StatCard
+                label="Inactive (90d+)"
+                value={p.userActivity.inactive}
+                variant={p.userActivity.inactive > 0 ? 'warning' : 'success'}
+              />
+              <StatCard
+                label="Never Logged In"
+                value={p.userActivity.neverLoggedIn}
+                variant={p.userActivity.neverLoggedIn > 0 ? 'danger' : 'success'}
+              />
             </Flex>
             {p.userActivity.superAdmins > 0 ? (
               <Text>Super admins: {p.userActivity.superAdmins}</Text>
             ) : null}
             {p.userActivity.usersWithNoRole > 0 ? (
-              <Text>Users without a role: {p.userActivity.usersWithNoRole}</Text>
+              <Alert title="Governance Gap" variant="warning">
+                {p.userActivity.usersWithNoRole} users have no role assigned. Assign roles to enforce least-privilege access.
+              </Alert>
             ) : null}
           </Flex>
-
-          <Divider />
 
           {/* Feature Adoption */}
           <Flex direction="column" gap="small">
             <Text format={{ fontWeight: 'bold' }}>Feature Adoption</Text>
             <Flex direction="row" gap="medium">
-              <MetricBox
+              <StatCard
                 label="Lists"
                 value={p.featureAdoption.lists.total}
                 sub={`${p.featureAdoption.lists.active} active`}
               />
-              <MetricBox
+              <StatCard
                 label="Forms"
                 value={p.featureAdoption.forms.total}
                 sub={`${p.featureAdoption.forms.active} active`}
               />
               {p.featureAdoption.reports.total > 0 ? (
-                <MetricBox label="Emails" value={p.featureAdoption.reports.total} />
+                <StatCard label="Reports" value={p.featureAdoption.reports.total} />
               ) : null}
               {p.featureAdoption.emailDeliverability.bounceRate !== null ? (
-                <MetricBox
+                <StatCard
                   label="Bounce Rate"
                   value={`${p.featureAdoption.emailDeliverability.bounceRate}%`}
+                  variant={p.featureAdoption.emailDeliverability.bounceRate > 2 ? 'danger' : 'success'}
+                />
+              ) : null}
+              {p.featureAdoption.emailDeliverability.unsubscribeRate !== null ? (
+                <StatCard
+                  label="Unsubscribe Rate"
+                  value={`${p.featureAdoption.emailDeliverability.unsubscribeRate}%`}
+                  variant={p.featureAdoption.emailDeliverability.unsubscribeRate > 0.5 ? 'warning' : 'success'}
                 />
               ) : null}
             </Flex>
@@ -585,23 +631,20 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
           {/* Lifecycle stage gaps */}
           {p.processHealth.lifecycleStageGaps.length > 0 ? (
-            <Flex direction="column" gap="small">
-              <Text format={{ fontWeight: 'bold' }}>Lifecycle Stage Gaps</Text>
-              <Text>
-                No contacts in: {p.processHealth.lifecycleStageGaps.join(', ')}
-              </Text>
-            </Flex>
+            <Alert title="Lifecycle Stage Gaps" variant="warning">
+              No contacts in: {p.processHealth.lifecycleStageGaps.join(', ')}
+            </Alert>
           ) : null}
 
         </Flex>
       ) : null}
 
-      {/* ── 8. Footer ────────────────────────────────────────────── */}
+      {/* ── 7. Footer ────────────────────────────────────────────── */}
       <Divider />
-      <Text>
-        Generated by HubAudit AI · {generatedDate} · Model: {analysis.modelUsed} ·
-        Duration: {Math.round(result.durationMs / 1000)}s
-      </Text>
+      <Flex direction="row" justify="between" align="center">
+        <Text>HubAudit AI · {generatedDate}</Text>
+        <Text>Model: {analysis.modelUsed} · Completed in {Math.round(result.durationMs / 1000)}s</Text>
+      </Flex>
 
     </Flex>
   );
