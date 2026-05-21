@@ -17,6 +17,9 @@
         "crm.schemas.deals.read",
         "automation",
         "settings.users.read",
+        "crm.lists.read",
+        "forms",
+        "content",
         "oauth"
       ],
       "redirectUrls": [
