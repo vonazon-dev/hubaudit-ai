@@ -1,6 +1,7 @@
 /**
  * HubSpot API client wrapper.
  * - Auto-injects Authorization header with fresh token
+ * - Pre-request rate limiter: max 8 req/s (HubSpot limit is 10/s)
  * - Retries on 429 with exponential backoff
  * - Generic paginated fetcher for CRM list endpoints
  */
@@ -12,11 +13,55 @@ const BASE_URL = 'https://api.hubapi.com';
 const MAX_RETRIES = 4;
 const INITIAL_BACKOFF_MS = 1000;
 
+// Allows up to MAX_PER_WINDOW requests per WINDOW_MS, queuing the rest.
+class RateLimiter {
+  private queue: Array<() => void> = [];
+  private processing = false;
+  private count = 0;
+  private windowStart = Date.now();
+
+  private readonly MAX_PER_WINDOW = 8;
+  private readonly WINDOW_MS = 1000;
+
+  throttle(): Promise<void> {
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+      if (!this.processing) this.process();
+    });
+  }
+
+  private async process(): Promise<void> {
+    this.processing = true;
+
+    while (this.queue.length > 0) {
+      const now = Date.now();
+      const elapsed = now - this.windowStart;
+
+      if (elapsed >= this.WINDOW_MS) {
+        this.windowStart = now;
+        this.count = 0;
+      }
+
+      if (this.count >= this.MAX_PER_WINDOW) {
+        await new Promise((r) => setTimeout(r, this.WINDOW_MS - elapsed + 10));
+        continue;
+      }
+
+      this.count++;
+      this.queue.shift()!();
+    }
+
+    this.processing = false;
+  }
+}
+
 export function createHubSpotClient(portalId: number): AxiosInstance {
   const client = axios.create({ baseURL: BASE_URL });
+  const limiter = new RateLimiter();
 
-  // Inject fresh access token before every request
+  // Rate-limit then inject fresh access token before every request
   client.interceptors.request.use(async (config) => {
+    await limiter.throttle();
     const token = await getValidAccessToken(portalId);
     config.headers.Authorization = `Bearer ${token}`;
     return config;
