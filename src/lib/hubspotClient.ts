@@ -13,32 +13,37 @@ const BASE_URL = 'https://api.hubapi.com';
 const MAX_RETRIES = 4;
 const INITIAL_BACKOFF_MS = 1000;
 
-// Releases one request every INTERVAL_MS — guarantees even spacing at 4 req/s.
-// HubSpot search API limit is 4 req/s; general API is 10 req/s.
-// Using 250ms interval (4/s) covers both safely.
+// Releases one request every INTERVAL_MS using a persistent setTimeout chain.
+// Each release schedules the next one, so the timer survives between calls
+// and never fires two requests in the same tick regardless of concurrency.
+// HubSpot search API: 4 req/s. Using 300ms (3.3/s) for a safe margin.
 class RateLimiter {
   private queue: Array<() => void> = [];
-  private processing = false;
-  private readonly INTERVAL_MS = 250;
+  private scheduled = false;
+  private lastRelease = 0;
+  private readonly INTERVAL_MS = 300;
 
   throttle(): Promise<void> {
     return new Promise((resolve) => {
       this.queue.push(resolve);
-      if (!this.processing) this.process();
+      this.scheduleNext();
     });
   }
 
-  private async process(): Promise<void> {
-    this.processing = true;
+  private scheduleNext(): void {
+    if (this.scheduled || this.queue.length === 0) return;
 
-    while (this.queue.length > 0) {
-      this.queue.shift()!();
+    const delay = Math.max(0, this.lastRelease + this.INTERVAL_MS - Date.now());
+    this.scheduled = true;
+
+    setTimeout(() => {
+      this.scheduled = false;
       if (this.queue.length > 0) {
-        await new Promise((r) => setTimeout(r, this.INTERVAL_MS));
+        this.lastRelease = Date.now();
+        this.queue.shift()!();
+        this.scheduleNext();
       }
-    }
-
-    this.processing = false;
+    }, delay);
   }
 }
 
