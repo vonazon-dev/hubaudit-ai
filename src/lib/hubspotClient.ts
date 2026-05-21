@@ -79,3 +79,28 @@ export async function fetchAllPages<T>(
 
   return results;
 }
+
+export type SearchFilter = { propertyName: string; operator: string; value?: string };
+
+/**
+ * Returns the total count of CRM objects matching the given filter groups.
+ * Each inner array is a group of AND filters; outer array groups are OR'd together.
+ * Uses limit:1 so only one record is transferred — the total comes from data.total.
+ */
+export async function countSearch(
+  client: AxiosInstance,
+  objectType: string,
+  filterGroups: SearchFilter[][] = [],
+): Promise<number> {
+  try {
+    const { data } = await client.post(`/crm/v3/objects/${objectType}/search`, {
+      limit: 1,
+      filterGroups: filterGroups.length
+        ? filterGroups.map((filters) => ({ filters }))
+        : [],
+    });
+    return data.total ?? 0;
+  } catch {
+    return 0;
+  }
+}

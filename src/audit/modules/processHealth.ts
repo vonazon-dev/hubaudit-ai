@@ -4,48 +4,37 @@
  * and lifecycle stage gaps.
  */
 import { AxiosInstance } from 'axios';
-import { fetchAllPages } from '../../lib/hubspotClient';
+import { countSearch } from '../../lib/hubspotClient';
 import { ProcessHealthData, PipelineStat, WorkflowStat } from '../../types/audit';
 import { logger } from '../../lib/logger';
-
-interface HsRecord {
-  id: string;
-  properties: Record<string, string | null>;
-}
 
 async function fetchPipelineStats(client: AxiosInstance): Promise<PipelineStat[]> {
   logger.info('Fetching pipeline stats...');
 
-  // Get all deal pipelines
   const { data: pipelineData } = await client.get('/crm/v3/pipelines/deals');
   const pipelines = pipelineData.results ?? [];
+  const cutoff = String(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const stats: PipelineStat[] = [];
-  const stagnantCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   for (const pipeline of pipelines) {
-    // Fetch deals in this pipeline
-    const deals = await fetchAllPages<HsRecord>(client, '/crm/v3/objects/deals', {
-      properties: 'dealname,amount,closedate,hubspot_owner_id,notes_last_updated,pipeline',
-      filterGroups: JSON.stringify([{
-        filters: [{ propertyName: 'pipeline', operator: 'EQ', value: pipeline.id }],
-      }]),
-    });
+    const inPipeline = [{ propertyName: 'pipeline', operator: 'EQ', value: pipeline.id }];
 
-    let stagnantDeals = 0, missingCloseDate = 0, missingAmount = 0;
-
-    for (const deal of deals) {
-      const p = deal.properties;
-      if (!p.notes_last_updated || p.notes_last_updated < stagnantCutoff) stagnantDeals++;
-      if (!p.closedate) missingCloseDate++;
-      if (!p.amount) missingAmount++;
-    }
+    const [dealsInPipeline, stagnantDeals, missingCloseDate, missingAmount] = await Promise.all([
+      countSearch(client, 'deals', [inPipeline]),
+      countSearch(client, 'deals', [
+        [...inPipeline, { propertyName: 'notes_last_updated', operator: 'NOT_HAS_PROPERTY' }],
+        [...inPipeline, { propertyName: 'notes_last_updated', operator: 'LT', value: cutoff }],
+      ]),
+      countSearch(client, 'deals', [[...inPipeline, { propertyName: 'closedate', operator: 'NOT_HAS_PROPERTY' }]]),
+      countSearch(client, 'deals', [[...inPipeline, { propertyName: 'amount', operator: 'NOT_HAS_PROPERTY' }]]),
+    ]);
 
     stats.push({
       id: pipeline.id,
       label: pipeline.label,
       stageCount: pipeline.stages?.length ?? 0,
-      dealsInPipeline: deals.length,
+      dealsInPipeline,
       stagnantDeals,
       missingCloseDate,
       missingAmount,
@@ -81,31 +70,22 @@ async function fetchRequiredFieldsAdherence(client: AxiosInstance): Promise<numb
 
   try {
     const { data } = await client.get('/crm/v3/properties/deals');
-    const required = (data.results ?? []).filter((p: any) => p.formField === true);
+    const required = (data.results ?? []).filter((p: any) => p.formField === true).slice(0, 10);
 
     if (required.length === 0) return 100;
 
-    // Sample last 200 deals to check adherence — no filter, just fetch and check
-    const deals = await fetchAllPages<HsRecord>(
-      client,
-      '/crm/v3/objects/deals',
-      { properties: required.map((p: any) => p.name).slice(0, 10).join(',') },
-      200,
-    );
+    const [total, ...missingCounts] = await Promise.all([
+      countSearch(client, 'deals', []),
+      ...required.map((p: any) =>
+        countSearch(client, 'deals', [[{ propertyName: p.name, operator: 'NOT_HAS_PROPERTY' }]])
+      ),
+    ]);
 
-    if (deals.length === 0) return 100;
+    if (total === 0) return 100;
 
-    let populated = 0;
-    let total = 0;
-
-    for (const deal of deals) {
-      for (const field of required.slice(0, 10)) {
-        total++;
-        if (deal.properties[field.name]) populated++;
-      }
-    }
-
-    return Math.round((populated / total) * 100);
+    const totalMissing = missingCounts.reduce((sum, c) => sum + c, 0);
+    const totalSlots = total * required.length;
+    return Math.round(((totalSlots - totalMissing) / totalSlots) * 100);
   } catch (err: any) {
     logger.warn('Could not check required fields', { error: err.message });
     return -1;
