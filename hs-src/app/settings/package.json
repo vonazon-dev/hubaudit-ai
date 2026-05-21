@@ -1,0 +1,8 @@
+{
+  "name": "hubaudit-ai-settings",
+  "version": "0.1.0",
+  "dependencies": {
+    "@hubspot/ui-extensions": "^0.12.1",
+    "react": "^18.2.0"
+  }
+}

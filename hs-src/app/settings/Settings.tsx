@@ -110,7 +110,7 @@ interface AuditResult {
 
 // ── Extension entry ────────────────────────────────────────────────────
 
-hubspot.extend<'pages'>(({ context }: any) => (
+hubspot.extend<'settings'>(({ context }: any) => (
   <AuditPage portalId={context.portal.id} />
 ));
 
@@ -267,13 +267,7 @@ function MetricBox({
   );
 }
 
-function ScoreRow({
-  label,
-  score,
-}: {
-  label: string;
-  score: number;
-}) {
+function ScoreRow({ label, score }: { label: string; score: number }) {
   return (
     <Flex direction="row" justify="between" align="center">
       <Text>{label}</Text>
@@ -340,7 +334,6 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
           ))}
         </Flex>
 
-        {/* Recommendation count summary */}
         <Flex direction="row" gap="small">
           {(['critical', 'high', 'medium', 'low'] as const).map((risk) => {
             const count = analysis.recommendations.filter((r) => r.risk === risk).length;
@@ -483,7 +476,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
         <Flex direction="column" gap="large">
           <SectionTitle>Detailed Metrics</SectionTitle>
 
-          {/* CRM Cleanliness per-object cards */}
+          {/* CRM Cleanliness per-object */}
           <Flex direction="column" gap="small">
             <Text format={{ fontWeight: 'bold' }}>CRM Cleanliness</Text>
             <Flex direction="row" gap="medium">

@@ -1,0 +1,7 @@
+{
+  "type": "settings",
+  "uid": "hubaudit-ai-settings",
+  "config": {
+    "entrypoint": "/app/settings/Settings.tsx"
+  }
+}
