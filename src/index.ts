@@ -83,7 +83,7 @@ console.log(process.env.DATABASE_URL);
 initDb()
   .then(() => {
     app.listen(PORT, () => {
-      logger.info(`HubAudit AI backend running`, {
+      logger.info(`Platform Auditor backend running`, {
         port: PORT,
         env: process.env.NODE_ENV ?? 'development',
         baseUrl: process.env.APP_BASE_URL,

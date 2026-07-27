@@ -91,17 +91,9 @@ function scoreFeatureAdoption(data: AuditPayload['featureAdoption']): number {
     checks.push((data.forms.active / data.forms.total) * 100);
   }
 
-  // Only score reports/integrations when data was actually retrieved
-  if (data.reports.total > 0) {
-    checks.push(Math.min(data.reports.total * 5, 100));
-  }
-
+  // Only score integrations when data was actually retrieved
   if (data.integrations.length > 0) {
     checks.push(Math.min(data.integrations.length * 20, 100));
-  }
-
-  if (data.emailDeliverability.bounceRate !== null) {
-    checks.push(Math.max(0, 100 - data.emailDeliverability.bounceRate * 10));
   }
 
   // No data available (scope limitations) — return neutral score

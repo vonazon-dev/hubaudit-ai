@@ -1,9 +1,9 @@
 /**
  * Module 3: Feature Adoption
- * Checks usage of lists, forms, and marketing emails.
+ * Checks usage of lists and forms.
  * Sequences and reports removed — no reliable API endpoint available for marketplace apps.
  * Integrations removed — calling settings endpoint is portal-specific.
- * Requires scopes: crm.lists.read, forms, content
+ * Requires scopes: crm.lists.read, forms
  */
 import { AxiosInstance } from 'axios';
 import { FeatureAdoptionData } from '../../types/audit';
@@ -35,39 +35,23 @@ async function fetchFormStats(client: AxiosInstance) {
   }
 }
 
-async function fetchEmailStats(client: AxiosInstance) {
-  logger.info('Fetching email stats...');
-  try {
-    const { data } = await client.get('/marketing/v3/emails', { params: { limit: 1 } });
-    const total = data.total ?? 0;
-    return { total, bounceRate: null as null, unsubscribeRate: null as null };
-  } catch (err: any) {
-    logger.warn('Could not fetch email stats', { error: err.message });
-    return { total: 0, bounceRate: null as null, unsubscribeRate: null as null };
-  }
-}
-
 export async function runFeatureAdoption(client: AxiosInstance): Promise<FeatureAdoptionData> {
   logger.info('Running feature adoption module...');
 
-  const [lists, forms, email] = await Promise.all([
+  const [lists, forms] = await Promise.all([
     fetchListStats(client),
     fetchFormStats(client),
-    fetchEmailStats(client),
   ]);
 
   logger.info('Feature adoption module complete', {
     lists: lists.total,
     forms: forms.total,
-    emails: email.total,
   });
 
   return {
     sequences: { active: 0, total: 0 },
     lists,
     forms,
-    reports: { total: email.total, dashboardCount: 0 },
-    emailDeliverability: { bounceRate: email.bounceRate, unsubscribeRate: email.unsubscribeRate },
     integrations: [],
   };
 }

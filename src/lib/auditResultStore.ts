@@ -53,4 +53,8 @@ export const auditResultStore = {
       updatedAt: rows[0].updated_at,
     };
   },
+
+  async delete(portalId: number): Promise<void> {
+    await pool.query(`DELETE FROM audit_results WHERE portal_id = $1`, [portalId]);
+  },
 };

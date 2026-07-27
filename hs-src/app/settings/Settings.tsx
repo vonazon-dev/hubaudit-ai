@@ -355,7 +355,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       {/* ── 1. Header ─────────────────────────────────────────────── */}
       <Flex direction="row" justify="between" align="start">
         <Flex direction="column" gap="extra-small">
-          <Heading>HubAudit AI</Heading>
+          <Heading>Platform Auditor</Heading>
           <Text format={{ fontWeight: 'bold' }}>Quarterly Portal Health Report</Text>
           <Text>Generated {generatedDate}</Text>
         </Flex>
@@ -642,7 +642,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       {/* ── 7. Footer ────────────────────────────────────────────── */}
       <Divider />
       <Flex direction="row" justify="between" align="center">
-        <Text>HubAudit AI · {generatedDate}</Text>
+        <Text>Platform Auditor · {generatedDate}</Text>
         <Text>Model: {analysis.modelUsed} · Completed in {Math.round(result.durationMs / 1000)}s</Text>
       </Flex>
 

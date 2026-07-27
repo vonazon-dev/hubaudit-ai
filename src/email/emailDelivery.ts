@@ -36,7 +36,7 @@ export async function sendReportEmail(params: SendReportEmailParams): Promise<vo
   }
 
   const scoreLabel = overallScore >= 70 ? 'Good' : overallScore >= 40 ? 'Needs Work' : 'Critical';
-  const filename = `HubAudit_AI_${portalName.replace(/\s+/g, '_')}_${auditDate}.pdf`;
+  const filename = `CRM_Auditor_AI_${portalName.replace(/\s+/g, '_')}_${auditDate}.pdf`;
   const base64Pdf = pdfBuffer.toString('base64');
 
   try {
@@ -108,7 +108,7 @@ function buildEmailHtml(p: {
 <!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F3F4F6;margin:0;padding:24px">
 <div style="max-width:580px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1)">
   <div style="background:#0F172A;padding:24px 32px">
-    <div style="font-size:20px;font-weight:800;color:white">HubAudit <span style="color:#FB923C">AI</span></div>
+    <div style="font-size:20px;font-weight:800;color:white">Platform <span style="color:#FB923C">Auditor</span></div>
     <div style="font-size:12px;color:#94A3B8;margin-top:2px">Quarterly Portal Health Report</div>
   </div>
   <div style="padding:32px">
@@ -130,7 +130,7 @@ function buildEmailHtml(p: {
     <p style="color:#374151;font-size:14px;margin-bottom:24px">Your full report contains <strong>${p.recommendationCount} recommendations</strong> with specific action steps. It's attached to this email as a PDF.</p>
 
     <p style="color:#6B7280;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #E5E7EB">
-      Generated on ${p.auditDate} by HubAudit AI.<br/>
+      Generated on ${p.auditDate} by Platform Auditor.<br/>
       To provide feedback on this report, reply to this email.
     </p>
   </div>
@@ -152,6 +152,6 @@ Total Recommendations: ${p.recommendationCount}
 
 Your full PDF report is attached.
 
-Generated on ${p.auditDate} by HubAudit AI.
+Generated on ${p.auditDate} by Platform Auditor.
 `;
 }

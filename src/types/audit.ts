@@ -56,8 +56,6 @@ export interface FeatureAdoptionData {
   sequences: { active: number; total: number };
   lists: { active: number; total: number; unused: number };
   forms: { active: number; total: number };
-  reports: { total: number; dashboardCount: number };
-  emailDeliverability: { bounceRate: number | null; unsubscribeRate: number | null };
   integrations: IntegrationStat[];
 }
 

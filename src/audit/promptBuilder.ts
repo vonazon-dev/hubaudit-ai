@@ -55,9 +55,6 @@ export function buildAuditPrompt(payload: AuditPayload, scores: CategoryScores):
       sequences: feat.sequences,
       lists: feat.lists,
       forms: feat.forms,
-      reports: feat.reports,
-      emailBounceRate: feat.emailDeliverability.bounceRate,
-      emailUnsubscribeRate: feat.emailDeliverability.unsubscribeRate,
       connectedIntegrations: feat.integrations.length,
     },
     users: {

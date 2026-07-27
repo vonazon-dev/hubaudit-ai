@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import { buildAuthUrl, exchangeCode } from '../services/hubspotOAuth';
 import { tokenStore } from '../lib/tokenStore';
+import { auditResultStore } from '../lib/auditResultStore';
 import { fireAudit } from '../services/auditRunner';
 import { logger } from '../lib/logger';
 
@@ -69,7 +70,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HubAudit AI — Installed</title>
+  <title>Platform Auditor — Installed</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f8fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
     .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.08); padding: 48px 40px; max-width: 480px; width: 100%; text-align: center; }
@@ -86,10 +87,10 @@ router.get('/callback', async (req: Request, res: Response) => {
   <div class="card">
     <div class="icon">✅</div>
     <div class="badge">Audit Running</div>
-    <h1>HubAudit AI Installed</h1>
+    <h1>Platform Auditor Installed</h1>
     <p>Your portal audit is running in the background — this typically takes 2–5 minutes. Once complete, your full report will be waiting inside HubSpot.</p>
     <a class="btn" href="https://app.hubspot.com/app/${tokens.portalId}/38957320">View My Report</a>
-    <p class="note">You can also find <strong>HubAudit AI</strong> in the left sidebar navigation.</p>
+    <p class="note">You can also find <strong>Platform Auditor</strong> in the left sidebar navigation.</p>
   </div>
 </body>
 </html>`);
@@ -115,7 +116,8 @@ router.post('/uninstall', async (req: Request, res: Response) => {
   }
 
   await tokenStore.delete(portalId);
-  logger.info('App uninstalled, tokens deleted', { portalId });
+  await auditResultStore.delete(portalId);
+  logger.info('App uninstalled, tokens and audit results deleted', { portalId });
   return res.json({ success: true });
 });
 

@@ -43,7 +43,7 @@ export async function runAudit(portalId: number): Promise<AuditResult> {
   });
   const featureAdoption = await runFeatureAdoption(client).catch((err) => {
     logger.error('Feature adoption module failed', { error: err.message });
-    return { sequences: { active: 0, total: 0 }, lists: { active: 0, total: 0, unused: 0 }, forms: { active: 0, total: 0 }, reports: { total: 0, dashboardCount: 0 }, emailDeliverability: { bounceRate: null, unsubscribeRate: null }, integrations: [] };
+    return { sequences: { active: 0, total: 0 }, lists: { active: 0, total: 0, unused: 0 }, forms: { active: 0, total: 0 }, integrations: [] };
   });
   const userActivity = await runUserActivity(client).catch((err) => {
     logger.error('User activity module failed', { error: err.message });

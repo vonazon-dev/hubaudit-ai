@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc *)",
-      "WebFetch(domain:developers.hubspot.com)"
+      "WebFetch(domain:developers.hubspot.com)",
+      "Bash(hs project *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Mayank Attri\\\\Desktop\\\\hubspot-projects\\\\hubaudit-ai\" -Recurse -Force)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

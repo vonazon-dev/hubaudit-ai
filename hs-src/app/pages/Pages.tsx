@@ -15,7 +15,6 @@ import {
   TableRow,
   TableCell,
   TableHeader,
-  Link,
 } from '@hubspot/ui-extensions';
 
 const BACKEND = 'https://hubaudit-ai-i4z82.ondigitalocean.app';
@@ -166,7 +165,9 @@ function AuditPage({ portalId }: { portalId: number }) {
         <Alert title="Audit In Progress" variant="info">
           Your HubSpot account audit is running. This typically takes 2–5 minutes. This page checks automatically every 20 seconds.
         </Alert>
-        <Button onClick={fetchReport} variant="secondary">Check Now</Button>
+        <Flex direction="row">
+          <Button onClick={fetchReport} variant="secondary">Check Now</Button>
+        </Flex>
       </Flex>
     );
   }
@@ -177,7 +178,9 @@ function AuditPage({ portalId }: { portalId: number }) {
         <Alert title="No Audit Found" variant="warning">
           No audit report was found for your portal. This can happen if the server restarted shortly after you installed the app.
         </Alert>
-        <Button onClick={triggerAudit}>Run Audit Now</Button>
+        <Flex direction="row">
+          <Button onClick={triggerAudit}>Run Audit Now</Button>
+        </Flex>
       </Flex>
     );
   }
@@ -188,7 +191,9 @@ function AuditPage({ portalId }: { portalId: number }) {
         <Alert title="Audit Failed" variant="danger">
           Something went wrong during your audit. Click below to try again.
         </Alert>
-        <Button onClick={triggerAudit}>Retry Audit</Button>
+        <Flex direction="row">
+          <Button onClick={triggerAudit}>Retry Audit</Button>
+        </Flex>
       </Flex>
     );
   }
@@ -248,12 +253,16 @@ function pct(part: number, total: number): string {
 
 // ── Sub-components ─────────────────────────────────────────────────────
 
-function SectionTitle({ children }: { children: string }) {
+function SectionTitle({ children, icon, variant = 'info' }: {
+  children: string;
+  icon?: string;
+  variant?: 'info' | 'success' | 'warning' | 'danger';
+}) {
   return (
-    <Flex direction="column" gap="extra-small">
-      <Heading>{children}</Heading>
-      <Divider />
-    </Flex>
+    <Alert
+      title={icon ? `${icon}  ${children}` : children}
+      variant={variant}
+    />
   );
 }
 
@@ -264,15 +273,15 @@ function StatCard({ label, value, sub, variant }: {
   variant?: 'danger' | 'warning' | 'default' | 'success';
 }) {
   return (
-    <Box>
-      <Flex direction="column" align="center" gap="extra-small">
+    <Box padding="small" border={true}>
+      <Flex direction="column" align="start" gap="extra-small">
+        <Text variant="microcopy">{label}</Text>
         {variant ? (
           <Tag variant={variant}>{value}</Tag>
         ) : (
           <Text format={{ fontWeight: 'bold' }}>{value}</Text>
         )}
-        <Text format={{ fontWeight: 'bold' }}>{label}</Text>
-        {sub ? <Text>{sub}</Text> : null}
+        {sub ? <Text variant="microcopy">{sub}</Text> : null}
       </Flex>
     </Box>
   );
@@ -283,7 +292,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
   const bar = '█'.repeat(filled) + '░'.repeat(10 - filled);
   return (
     <Flex direction="row" justify="between" align="center" gap="medium">
-      <Text>{label}</Text>
+      <Text format={{ fontWeight: 'bold' }}>{label}</Text>
       <Flex direction="row" align="center" gap="small">
         <Text>{bar}</Text>
         <Tag variant={scoreVariant(score)}>{score}/100 · {gradeLabel(score)}</Tag>
@@ -294,7 +303,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
 
 function RecCard({ rec }: { rec: Recommendation }) {
   return (
-    <Box>
+    <Box padding="medium" border={true}>
       <Flex direction="column" gap="small">
         <Flex direction="row" align="center" gap="small">
           <Tag variant={riskVariant(rec.risk)}>
@@ -304,24 +313,23 @@ function RecCard({ rec }: { rec: Recommendation }) {
           <Text format={{ fontWeight: 'bold' }}>{rec.title}</Text>
         </Flex>
 
-        <Flex direction="row" gap="small">
-          <Text format={{ fontWeight: 'bold' }}>Problem:</Text>
+        <Divider />
+
+        <Flex direction="column" gap="extra-small">
+          <Text variant="microcopy" format={{ fontWeight: 'bold' }}>PROBLEM</Text>
           <Text>{rec.problem}</Text>
         </Flex>
 
-        <Flex direction="row" gap="small">
-          <Text format={{ fontWeight: 'bold' }}>Impact:</Text>
+        <Flex direction="column" gap="extra-small">
+          <Text variant="microcopy" format={{ fontWeight: 'bold' }}>IMPACT</Text>
           <Text>{rec.impact}</Text>
         </Flex>
 
-        <Flex direction="row" gap="small">
-          <Text format={{ fontWeight: 'bold' }}>Action:</Text>
+        <Flex direction="column" gap="extra-small">
+          <Text variant="microcopy" format={{ fontWeight: 'bold' }}>ACTION</Text>
           <Text>{rec.action}</Text>
         </Flex>
 
-        {rec.hubspotUrl ? (
-          <Link href={rec.hubspotUrl}>Open in HubSpot →</Link>
-        ) : null}
       </Flex>
     </Box>
   );
@@ -350,23 +358,24 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
   const lowCount  = analysis.recommendations.filter((r) => r.risk === 'low').length;
 
   return (
-    <Flex direction="column" gap="large">
+    <Flex direction="column" gap="extra-large">
 
       {/* ── 1. Header ─────────────────────────────────────────────── */}
-      <Flex direction="row" justify="between" align="start">
-        <Flex direction="column" gap="extra-small">
-          <Heading>HubAudit AI</Heading>
-          <Text format={{ fontWeight: 'bold' }}>Quarterly Portal Health Report</Text>
-          <Text>Generated {generatedDate}</Text>
+      <Flex direction="column" gap="extra-small">
+        <Flex direction="row" justify="between" align="start">
+          <Flex direction="column" gap="extra-small">
+            <Heading>Platform Auditor</Heading>
+            <Text format={{ fontWeight: 'bold' }}>Quarterly Portal Health Report</Text>
+            <Text>Generated {generatedDate}</Text>
+          </Flex>
+          <Button onClick={onRerun} variant="secondary">Re-run Audit</Button>
         </Flex>
-        <Button onClick={onRerun} variant="secondary">Re-run Audit</Button>
+        <Divider />
       </Flex>
-
-      <Divider />
 
       {/* ── 2. Overall Score Dashboard ───────────────────────────── */}
       <Flex direction="column" gap="medium">
-        <SectionTitle>Overall Health Score</SectionTitle>
+        <SectionTitle icon="📊" variant="info">Overall Health Score</SectionTitle>
 
         <Flex direction="row" align="center" gap="medium">
           <Heading>{scores.overall} / 100</Heading>
@@ -375,12 +384,17 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
           </Tag>
         </Flex>
 
-        <Flex direction="column" gap="small">
-          <ScoreBar label="CRM Cleanliness"  score={scores.crmCleanliness} />
-          <ScoreBar label="Process Health"   score={scores.processHealth} />
-          <ScoreBar label="Feature Adoption" score={scores.featureAdoption} />
-          <ScoreBar label="User Activity"    score={scores.userActivity} />
-        </Flex>
+        <Box padding="small" border={true}>
+          <Flex direction="column" gap="small">
+            <ScoreBar label="CRM Cleanliness"  score={scores.crmCleanliness} />
+            <Divider />
+            <ScoreBar label="Process Health"   score={scores.processHealth} />
+            <Divider />
+            <ScoreBar label="Feature Adoption" score={scores.featureAdoption} />
+            <Divider />
+            <ScoreBar label="User Activity"    score={scores.userActivity} />
+          </Flex>
+        </Box>
 
         {/* Issue count badges */}
         <Flex direction="row" gap="small" wrap="wrap">
@@ -391,27 +405,29 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
         </Flex>
       </Flex>
 
-      <Divider />
-
       {/* ── 3. Executive Summary ─────────────────────────────────── */}
       <Flex direction="column" gap="medium">
-        <SectionTitle>Executive Summary</SectionTitle>
+        <SectionTitle icon="📋" variant="success">Executive Summary</SectionTitle>
 
         <Text format={{ italic: true }}>"{analysis.executiveSummary.overallVerdict}"</Text>
 
         <Flex direction="row" gap="large">
-          <Flex direction="column" gap="extra-small">
-            <Text format={{ fontWeight: 'bold' }}>What's Working Well</Text>
-            {analysis.executiveSummary.topWins.map((win, i) => (
-              <Text key={i}>✓  {win}</Text>
-            ))}
-          </Flex>
-          <Flex direction="column" gap="extra-small">
-            <Text format={{ fontWeight: 'bold' }}>Top Gaps to Address</Text>
-            {analysis.executiveSummary.topGaps.map((gap, i) => (
-              <Text key={i}>✗  {gap}</Text>
-            ))}
-          </Flex>
+          <Box padding="small" border={true}>
+            <Flex direction="column" gap="small">
+              <Tag variant="success">What's Working Well</Tag>
+              {analysis.executiveSummary.topWins.map((win, i) => (
+                <Text key={i}>✓  {win}</Text>
+              ))}
+            </Flex>
+          </Box>
+          <Box padding="small" border={true}>
+            <Flex direction="column" gap="small">
+              <Tag variant="warning">Top Gaps to Address</Tag>
+              {analysis.executiveSummary.topGaps.map((gap, i) => (
+                <Text key={i}>✗  {gap}</Text>
+              ))}
+            </Flex>
+          </Box>
         </Flex>
 
         {analysis.executiveSummary.closingNote ? (
@@ -421,12 +437,10 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
         ) : null}
       </Flex>
 
-      <Divider />
-
       {/* ── 4. Portal at a Glance ────────────────────────────────── */}
       {p ? (
         <Flex direction="column" gap="medium">
-          <SectionTitle>Portal at a Glance</SectionTitle>
+          <SectionTitle icon="🔍" variant="info">Portal at a Glance</SectionTitle>
 
           <Flex direction="row" gap="medium">
             <StatCard label="Contacts"  value={p.crmCleanliness.contacts.total} />
@@ -456,20 +470,18 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
         </Flex>
       ) : null}
 
-      <Divider />
-
       {/* ── 5. Action Plan ───────────────────────────────────────── */}
       <Flex direction="column" gap="medium">
-        <SectionTitle>{`Action Plan — ${analysis.recommendations.length} Recommendations`}</SectionTitle>
-        <Text>Sorted by priority. Address critical and high items first for maximum ROI.</Text>
+        <SectionTitle icon="🎯" variant={critCount > 0 ? 'danger' : highCount > 0 ? 'warning' : 'info'}>Action Plan</SectionTitle>
+        <Text variant="microcopy">Sorted by priority. Address critical and high items first for maximum ROI.</Text>
 
         {groups.map(({ risk, items }) => (
-          <Flex key={risk} direction="column" gap="small">
+          <Flex key={risk} direction="column" gap="medium">
             <Flex direction="row" align="center" gap="small">
               <Tag variant={riskVariant(risk)}>
                 {riskEmoji(risk)} {risk.charAt(0).toUpperCase() + risk.slice(1)}
               </Tag>
-              <Text format={{ fontWeight: 'bold' }}>{items.length} item{items.length !== 1 ? 's' : ''}</Text>
+              <Text variant="microcopy">{items.length} item{items.length !== 1 ? 's' : ''}</Text>
             </Flex>
 
             {items.map((rec) => (
@@ -479,16 +491,14 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
         ))}
       </Flex>
 
-      <Divider />
-
       {/* ── 6. Detailed Metrics ──────────────────────────────────── */}
       {p ? (
         <Flex direction="column" gap="large">
-          <SectionTitle>Detailed Metrics</SectionTitle>
+          <SectionTitle icon="📈" variant="info">Detailed Metrics</SectionTitle>
 
           {/* CRM Cleanliness per-object */}
           <Flex direction="column" gap="small">
-            <Text format={{ fontWeight: 'bold' }}>CRM Object Health</Text>
+            <Heading size="extra-small">CRM Object Health</Heading>
             <Table>
               <TableHead>
                 <TableRow>
@@ -533,7 +543,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
           {/* Deal Pipelines */}
           {p.processHealth.pipelines.length > 0 ? (
             <Flex direction="column" gap="small">
-              <Text format={{ fontWeight: 'bold' }}>Deal Pipelines</Text>
+              <Heading size="extra-small">Deal Pipelines</Heading>
               <Table>
                 <TableHead>
                   <TableRow>
@@ -565,7 +575,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
           {/* User Activity */}
           <Flex direction="column" gap="small">
-            <Text format={{ fontWeight: 'bold' }}>User Activity</Text>
+            <Heading size="extra-small">User Activity</Heading>
             <Flex direction="row" gap="medium">
               <StatCard label="Total" value={p.userActivity.total} />
               <StatCard
@@ -597,7 +607,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
 
           {/* Feature Adoption */}
           <Flex direction="column" gap="small">
-            <Text format={{ fontWeight: 'bold' }}>Feature Adoption</Text>
+            <Heading size="extra-small">Feature Adoption</Heading>
             <Flex direction="row" gap="medium">
               <StatCard
                 label="Lists"
@@ -642,7 +652,7 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
       {/* ── 7. Footer ────────────────────────────────────────────── */}
       <Divider />
       <Flex direction="row" justify="between" align="center">
-        <Text>HubAudit AI · {generatedDate}</Text>
+        <Text>Platform Auditor · {generatedDate}</Text>
         <Text>Model: {analysis.modelUsed} · Completed in {Math.round(result.durationMs / 1000)}s</Text>
       </Flex>
 

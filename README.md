@@ -1,4 +1,4 @@
-# HubAudit AI — Setup Guide
+# Platform Auditor — Setup Guide
 
 ## Phase 0 checklist
 
@@ -7,7 +7,7 @@
 1. Go to [developers.hubspot.com](https://developers.hubspot.com) → your developer account
 2. Click **Apps** → **Create app**
 3. Fill in:
-   - **App name**: HubAudit AI
+   - **App name**: Platform Auditor
    - **Description**: AI-powered quarterly health check for your HubSpot portal
 4. Under **Auth** tab:
    - Add redirect URI: `https://your-app.ondigitalocean.app/oauth/callback`

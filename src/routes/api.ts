@@ -7,6 +7,25 @@ import { logger } from '../lib/logger';
 const router = Router();
 
 /**
+ * GET /api/logo.svg
+ * App logo — served so HubSpot UI Extensions can load it via permittedUrls.img.
+ */
+const LOGO_SVG = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="10" fill="#FF7A59"/>
+  <circle cx="20" cy="20" r="8.5" stroke="white" stroke-width="2.5"/>
+  <line x1="26.5" y1="26.5" x2="34.5" y2="34.5" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="16" y1="20" x2="24" y2="20" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9"/>
+  <line x1="20" y1="16" x2="20" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="20" cy="20" r="2.5" fill="white"/>
+</svg>`;
+
+router.get('/logo.svg', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(LOGO_SVG);
+});
+
+/**
  * GET /api/health
  */
 router.get('/health', (_req: Request, res: Response) => {
