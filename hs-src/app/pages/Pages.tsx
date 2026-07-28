@@ -77,8 +77,6 @@ interface AuditPayload {
   featureAdoption: {
     lists: { active: number; total: number };
     forms: { active: number; total: number };
-    reports: { total: number };
-    emailDeliverability: { bounceRate: number | null; unsubscribeRate: number | null };
   };
   userActivity: {
     total: number;
@@ -109,7 +107,7 @@ interface AuditResult {
 
 // ── Extension entry ────────────────────────────────────────────────────
 
-hubspot.extend<'pages'>(({ context }: any) => (
+hubspot.extend<'page'>(({ context }: any) => (
   <AuditPage portalId={context.portal.id} />
 ));
 
@@ -619,23 +617,6 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
                 value={p.featureAdoption.forms.total}
                 sub={`${p.featureAdoption.forms.active} active`}
               />
-              {p.featureAdoption.reports.total > 0 ? (
-                <StatCard label="Reports" value={p.featureAdoption.reports.total} />
-              ) : null}
-              {p.featureAdoption.emailDeliverability.bounceRate !== null ? (
-                <StatCard
-                  label="Bounce Rate"
-                  value={`${p.featureAdoption.emailDeliverability.bounceRate}%`}
-                  variant={p.featureAdoption.emailDeliverability.bounceRate > 2 ? 'danger' : 'success'}
-                />
-              ) : null}
-              {p.featureAdoption.emailDeliverability.unsubscribeRate !== null ? (
-                <StatCard
-                  label="Unsubscribe Rate"
-                  value={`${p.featureAdoption.emailDeliverability.unsubscribeRate}%`}
-                  variant={p.featureAdoption.emailDeliverability.unsubscribeRate > 0.5 ? 'warning' : 'success'}
-                />
-              ) : null}
             </Flex>
           </Flex>
 
