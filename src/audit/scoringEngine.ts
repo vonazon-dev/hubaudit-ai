@@ -34,7 +34,6 @@ function scoreCrmCleanliness(data: AuditPayload['crmCleanliness']): number {
     data.contacts.completenessScore,
     data.companies.completenessScore,
     data.deals.completenessScore,
-    data.tickets.completenessScore,
   ].filter((s) => s >= 0);
 
   if (scores.length === 0) return 50;
@@ -42,9 +41,9 @@ function scoreCrmCleanliness(data: AuditPayload['crmCleanliness']): number {
 
   // Penalise for unassigned and stagnant records
   const totalRecords =
-    data.contacts.total + data.companies.total + data.deals.total + data.tickets.total;
+    data.contacts.total + data.companies.total + data.deals.total;
   const totalStagnant =
-    data.contacts.stagnant + data.companies.stagnant + data.deals.stagnant + data.tickets.stagnant;
+    data.contacts.stagnant + data.companies.stagnant + data.deals.stagnant;
   const stagnantPenalty = totalRecords > 0 ? (totalStagnant / totalRecords) * 20 : 0;
 
   return clamp(avg - stagnantPenalty);

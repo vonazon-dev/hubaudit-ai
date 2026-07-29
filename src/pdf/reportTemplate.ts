@@ -249,11 +249,10 @@ export function buildReportHtml(
   <!-- Quick stats -->
   <div class="section">
     <h2>Portal at a Glance</h2>
-    <div class="grid-4">
+    <div class="grid-3">
       ${statBox('Contacts', crm.contacts.total.toLocaleString())}
       ${statBox('Companies', crm.companies.total.toLocaleString())}
       ${statBox('Deals', crm.deals.total.toLocaleString())}
-      ${statBox('Tickets', crm.tickets.total.toLocaleString())}
     </div>
     <div class="grid-4" style="margin-top:12px">
       ${statBox('Total Users', users.total, `${users.neverLoggedIn} never logged in`)}
@@ -293,7 +292,6 @@ export function buildReportHtml(
         ['Contacts', crm.contacts],
         ['Companies', crm.companies],
         ['Deals', crm.deals],
-        ['Tickets', crm.tickets],
       ].map(([label, obj]: any) => `
         <div class="card">
           <div style="display:flex;justify-content:space-between;margin-bottom:10px">

@@ -16,13 +16,11 @@
      crm.objects.contacts.read
      crm.objects.companies.read
      crm.objects.deals.read
-     crm.objects.tickets.read
-     crm.schemas.contacts.read
-     crm.schemas.companies.read
      crm.schemas.deals.read
-     crm.pipelines.orders.read
-     automation.flows.read
+     automation
      settings.users.read
+     crm.lists.read
+     forms
      oauth
      ```
 5. Copy **Client ID** and **Client Secret** → add to `.env`

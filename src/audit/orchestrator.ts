@@ -35,7 +35,7 @@ export async function runAudit(portalId: number): Promise<AuditResult> {
   // Run modules sequentially to stay within HubSpot API rate limits
   const crmCleanliness = await runCrmCleanliness(client).catch((err) => {
     logger.error('CRM cleanliness module failed', { error: err.message });
-    return { contacts: empty(), companies: empty(), deals: empty(), tickets: empty(), duplicateEstimates: [] };
+    return { contacts: empty(), companies: empty(), deals: empty(), duplicateEstimates: [] };
   });
   const processHealth = await runProcessHealth(client).catch((err) => {
     logger.error('Process health module failed', { error: err.message });

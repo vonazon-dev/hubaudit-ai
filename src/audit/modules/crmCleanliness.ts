@@ -85,27 +85,6 @@ async function fetchDealStats(client: AxiosInstance): Promise<ObjectStats> {
   return { total, unassigned, missingEmail: 0, missingName, missingPhone: missingAmount, stagnant, completenessScore };
 }
 
-async function fetchTicketStats(client: AxiosInstance): Promise<ObjectStats> {
-  logger.info('Fetching ticket stats...');
-  const cutoff = cutoffMs(STAGNANT_DAYS);
-
-  const [total, unassigned, missingName, stagnant] = await Promise.all([
-    countSearch(client, 'tickets', []),
-    countSearch(client, 'tickets', [[{ propertyName: 'hubspot_owner_id', operator: 'NOT_HAS_PROPERTY' }]]),
-    countSearch(client, 'tickets', [[{ propertyName: 'subject', operator: 'NOT_HAS_PROPERTY' }]]),
-    countSearch(client, 'tickets', [
-      [{ propertyName: 'notes_last_updated', operator: 'NOT_HAS_PROPERTY' }],
-      [{ propertyName: 'notes_last_updated', operator: 'LT', value: cutoff }],
-    ]),
-  ]);
-
-  const completenessScore = total === 0 ? 100 : Math.round(
-    100 - ((missingName + unassigned) / (total * 2)) * 100
-  );
-
-  return { total, unassigned, missingEmail: 0, missingName, missingPhone: 0, stagnant, completenessScore };
-}
-
 async function fetchDuplicateEstimates(client: AxiosInstance): Promise<DuplicateEstimate[]> {
   logger.info('Fetching duplicate estimates...');
   return [
@@ -117,11 +96,10 @@ async function fetchDuplicateEstimates(client: AxiosInstance): Promise<Duplicate
 export async function runCrmCleanliness(client: AxiosInstance): Promise<CrmCleanlinessData> {
   logger.info('Running CRM cleanliness module...');
 
-  const [contacts, companies, deals, tickets, duplicateEstimates] = await Promise.all([
+  const [contacts, companies, deals, duplicateEstimates] = await Promise.all([
     fetchContactStats(client),
     fetchCompanyStats(client),
     fetchDealStats(client),
-    fetchTicketStats(client),
     fetchDuplicateEstimates(client),
   ]);
 
@@ -129,8 +107,7 @@ export async function runCrmCleanliness(client: AxiosInstance): Promise<CrmClean
     contacts: contacts.total,
     companies: companies.total,
     deals: deals.total,
-    tickets: tickets.total,
   });
 
-  return { contacts, companies, deals, tickets, duplicateEstimates };
+  return { contacts, companies, deals, duplicateEstimates };
 }

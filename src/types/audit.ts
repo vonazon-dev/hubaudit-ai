@@ -7,7 +7,6 @@ export interface CrmCleanlinessData {
   contacts: ObjectStats;
   companies: ObjectStats;
   deals: ObjectStats;
-  tickets: ObjectStats;
   duplicateEstimates: DuplicateEstimate[];
 }
 

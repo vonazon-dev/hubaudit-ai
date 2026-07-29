@@ -12,7 +12,7 @@ When you install the App, HubSpot asks you to approve a set of permissions ("sco
 
 | Data | Purpose |
 |---|---|
-| Contacts, companies, deals, tickets (read-only) | Assess record completeness, ownership, and staleness for the CRM Cleanliness score |
+| Contacts, companies, deals (read-only) | Assess record completeness, ownership, and staleness for the CRM Cleanliness score |
 | Deal pipelines and deal properties | Assess pipeline hygiene (missing close dates, missing amounts) for the Process Health score |
 | Workflows/automations | Assess adoption and documentation for the Process Health score |
 | Lists and forms | Assess feature adoption |

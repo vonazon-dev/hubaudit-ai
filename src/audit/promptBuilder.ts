@@ -32,12 +32,6 @@ export function buildAuditPrompt(payload: AuditPayload, scores: CategoryScores):
         missingAmount: crm.deals.missingPhone, // reused field
         completeness: crm.deals.completenessScore,
       },
-      tickets: {
-        total: crm.tickets.total,
-        unassigned: crm.tickets.unassigned,
-        stagnant: crm.tickets.stagnant,
-        completeness: crm.tickets.completenessScore,
-      },
     },
     process: {
       pipelineCount: proc.pipelines.length,

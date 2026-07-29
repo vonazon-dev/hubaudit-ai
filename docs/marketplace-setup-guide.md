@@ -16,7 +16,7 @@ Platform Auditor connects to your HubSpot portal and runs an automated health au
 1. From the [HubSpot Marketplace listing](#), click **Install app** (or **Connect app**, depending on where you're installing from).
 2. Log in to the HubSpot account you want to audit, if prompted.
 3. Review the requested permissions on the authorization screen. Platform Auditor reads (never writes or modifies):
-   - Contacts, companies, deals, and tickets
+   - Contacts, companies, and deals
    - Deal pipelines and properties
    - Workflows/automations
    - Forms and active lists

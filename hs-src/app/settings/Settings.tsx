@@ -67,7 +67,6 @@ interface AuditPayload {
     contacts: ObjectStats;
     companies: ObjectStats;
     deals: ObjectStats;
-    tickets: ObjectStats;
   };
   processHealth: {
     pipelines: PipelineStat[];
@@ -430,7 +429,6 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
             <StatCard label="Contacts"  value={p.crmCleanliness.contacts.total} />
             <StatCard label="Companies" value={p.crmCleanliness.companies.total} />
             <StatCard label="Deals"     value={p.crmCleanliness.deals.total} />
-            <StatCard label="Tickets"   value={p.crmCleanliness.tickets.total} />
           </Flex>
 
           <Flex direction="row" gap="medium">
@@ -502,7 +500,6 @@ function ReportView({ result, onRerun }: { result: AuditResult; onRerun: () => v
                   { label: 'Contacts',  data: p.crmCleanliness.contacts },
                   { label: 'Companies', data: p.crmCleanliness.companies },
                   { label: 'Deals',     data: p.crmCleanliness.deals },
-                  { label: 'Tickets',   data: p.crmCleanliness.tickets },
                 ].map(({ label, data }) => (
                   <TableRow key={label}>
                     <TableCell>{label}</TableCell>
